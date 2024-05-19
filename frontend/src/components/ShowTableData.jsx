@@ -26,7 +26,16 @@ const ShowTableData = () => {
         try {
           const res = await axios.get(`http://localhost:8800/tableData/${selectedTable}`);
           if (Array.isArray(res.data)) {
-            setTableState(res.data);
+            const formattedData = res.data.map(row => {
+              const formattedRow = { ...row };
+              Object.keys(formattedRow).forEach(key => {
+                if (isValidDate(formattedRow[key])) {
+                  formattedRow[key] = formatDate(formattedRow[key]);
+                }
+              });
+              return formattedRow;
+            });
+            setTableState(formattedData);
           } else {
             setTableState([]);
           }
@@ -49,16 +58,44 @@ const ShowTableData = () => {
   };
 
   const handleUpdate = (row) => {
-    setEditRow(row);
+    const formattedRow = { ...row };
+    Object.keys(formattedRow).forEach(key => {
+      if (isValidDate(formattedRow[key])) {
+        formattedRow[key] = formatDate(formattedRow[key]);
+      }
+    });
+    setEditRow(formattedRow);
   };
 
   const handleUpdateSuccess = (updatedRow) => {
-    setTableState((prevState) => prevState.map(row => (row.id === updatedRow.id ? updatedRow : row)));
+    const formattedRow = { ...updatedRow };
+    Object.keys(formattedRow).forEach(key => {
+      if (isValidDate(formattedRow[key])) {
+        formattedRow[key] = formatDate(formattedRow[key]);
+      }
+    });
+    setTableState((prevState) => prevState.map(row => (row.id === formattedRow.id ? formattedRow : row)));
     setEditRow(null);
   };
 
   const handleCancelUpdate = () => {
     setEditRow(null);
+  };
+
+  const isValidDate = (dateString) => {
+    const regex = /^\d{4}-\d{2}-\d{2}$/;
+    const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}.\d{3}Z$/;
+    return regex.test(dateString) || isoRegex.test(dateString);
+  };
+
+  const formatDate = (dateString) => {
+    if (dateString.includes('T')) {
+      const [datePart] = dateString.split('T');
+      const [year, month, day] = datePart.split('-');
+      return `${day}/${month}/${year}`;
+    }
+    const [year, month, day] = dateString.split('-');
+    return `${day}/${month}/${year}`;
   };
 
   return (

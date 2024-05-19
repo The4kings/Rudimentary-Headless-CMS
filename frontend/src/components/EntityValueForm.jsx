@@ -44,6 +44,9 @@ export default function EntityValueForm() {
   };
 
   const convertDateFormat = (date) => {
+    if (!date.includes('/')) {
+      return date;
+    }
     const [day, month, year] = date.split('/');
     return `${year}-${month}-${day}`;
   };
@@ -61,10 +64,10 @@ export default function EntityValueForm() {
 
     const convertedAttributes = {};
     for (const [key, value] of Object.entries(attributeState)) {
-      if (key.toLowerCase().includes('date of birth') || key.toLowerCase().includes('dob')) {
+      if (key.toLowerCase().includes('date of birth') || key.toLowerCase().includes('dob') || key.toLowerCase().includes('date')) {
         convertedAttributes[key] = convertDateFormat(value);
       } else if (key.toLowerCase().includes('createdat') || key.toLowerCase().includes('updatedat')) {
-        convertedAttributes[key] = value;
+        convertedAttributes[key] = value.split('T')[0]; 
       } else {
         convertedAttributes[key] = value;
       }
@@ -115,7 +118,7 @@ export default function EntityValueForm() {
                   value={attributeState[attribute] || ''} 
                   onChange={handleChange}
                   className="bg-gray-50 border-gray-300 text-gray-900 text-sm rounded-lg block w-full p-2.5 focus:outline-none focus:border-blue-600 border-2"
-                  placeholder={attribute.toLowerCase().includes('date of birth') || attribute.toLowerCase().includes('dob') ? 'DD/MM/YYYY' : (attribute.toLowerCase().includes('createdat') || attribute.toLowerCase().includes('updatedat') ? 'YYYY-MM-DD' : attribute)}
+                  placeholder={attribute.toLowerCase().includes('date of birth') || attribute.toLowerCase().includes('dob') || attribute.toLowerCase().includes('date') ? 'DD/MM/YYYY' : (attribute.toLowerCase().includes('createdat') || attribute.toLowerCase().includes('updatedat') ? 'YYYY-MM-DD' : attribute)}
                 />
               </div>
             </div>

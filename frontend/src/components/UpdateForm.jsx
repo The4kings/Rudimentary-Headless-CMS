@@ -12,11 +12,12 @@ const UpdateForm = ({ tableName, row, onUpdateSuccess, onCancel }) => {
   };
 
   const convertDateFormat = (dateString) => {
-    const date = new Date(dateString);
-    const year = date.getFullYear();
-    const month = (`0${date.getMonth() + 1}`).slice(-2);
-    const day = (`0${date.getDate()}`).slice(-2);
-    return `${year}-${month}-${day}`;
+    const dateParts = dateString.split('/');
+    if (dateParts.length === 3) {
+      const [day, month, year] = dateParts;
+      return `${year}-${month}-${day}`;
+    }
+    return dateString;
   };
 
   const handleSubmit = async (e) => {
@@ -25,7 +26,7 @@ const UpdateForm = ({ tableName, row, onUpdateSuccess, onCancel }) => {
       const { id, ...updateData } = formData;
 
       Object.keys(updateData).forEach(key => {
-        if (key.toLowerCase().includes('date') || key.toLowerCase().includes('createdat') || key.toLowerCase().includes('updatedat')) {
+        if (key.toLowerCase().includes('date') || key.toLowerCase().includes('dob') || key.toLowerCase().includes('createdat') || key.toLowerCase().includes('updatedat')) {
           updateData[key] = convertDateFormat(updateData[key]);
         }
       });
@@ -33,10 +34,7 @@ const UpdateForm = ({ tableName, row, onUpdateSuccess, onCancel }) => {
       await axios.put(`http://localhost:8800/updateRow/${tableName}/${id}`, updateData);
       onUpdateSuccess({ ...updateData, id });
     } catch (error) {
-      const errorMessage = error.response && error.response.data && error.response.data.details
-        ? error.response.data.details.sqlMessage
-        : error.message;
-      alert(`Failed to update row: ${errorMessage}`);
+      alert(`Failed to update entry: ${error.response?.data?.details?.sqlMessage || error.message}`);
       console.log(error);
     }
   };
@@ -52,6 +50,7 @@ const UpdateForm = ({ tableName, row, onUpdateSuccess, onCancel }) => {
               value={formData[key]}
               onChange={handleChange}
               className="border rounded py-1 px-2"
+              placeholder={key.toLowerCase().includes('date') || key.toLowerCase().includes('dob') || key.toLowerCase().includes('createdat') || key.toLowerCase().includes('updatedat') ? 'DD/MM/YYYY' : ''}
             />
           </div>
         )

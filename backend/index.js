@@ -20,7 +20,9 @@ const dataTypeMapping = {
   date: 'DATE',
 };
 
-const generateRandomId = () => Math.floor(Math.random() * 90) + 10;
+app.get("/", (req, res) => {
+  res.json("hello this is beautiful");
+});
 
 app.get("/tables", (req, res) => {
   const q = `SHOW TABLES`;
@@ -33,6 +35,7 @@ app.get("/tables", (req, res) => {
 
 app.get("/tableAttributes/:tableName", (req, res) => {
   const tableName = req.params.tableName;
+
   const q = `SHOW COLUMNS FROM ??`;
   db.query(q, [tableName], (err, data) => {
     if (err) return res.status(500).json(err);
@@ -42,6 +45,7 @@ app.get("/tableAttributes/:tableName", (req, res) => {
 
 app.get("/tableData/:tableName", (req, res) => {
   const tableName = req.params.tableName;
+
   const q = `SELECT * FROM ??`;
   db.query(q, [tableName], (err, data) => {
     if (err) return res.json(err);
@@ -51,18 +55,22 @@ app.get("/tableData/:tableName", (req, res) => {
 
 app.post("/createTable", (req, res) => {
   const { tableName, attributes } = req.body;
+
   if (!tableName || !attributes || typeof attributes !== 'object' || Array.isArray(attributes)) {
     return res.status(400).json({ error: "Invalid request data" });
   }
+
   const columnDefinitions = Object.entries(attributes).map(([name, type]) => {
     const mysqlType = dataTypeMapping[type.toLowerCase()] || type;
     return `\`${name}\` ${mysqlType}`;
   }).join(', ');
+
   const q = `CREATE TABLE \`${tableName}\` (
-    \`id\` INT NOT NULL DEFAULT ${generateRandomId()}, 
+    \`id\` INT NOT NULL AUTO_INCREMENT, 
     ${columnDefinitions}, 
     PRIMARY KEY (\`id\`)
   )`;
+
   db.query(q, (err, data) => {
     if (err) {
       console.error("Error creating table:", err);
@@ -74,13 +82,17 @@ app.post("/createTable", (req, res) => {
 
 app.post("/tableDatas", (req, res) => {
   const { tableName, attributes } = req.body;
+
   if (!tableName || !attributes || typeof attributes !== 'object' || Array.isArray(attributes)) {
     return res.status(400).json({ error: "Invalid request data" });
   }
-  const columns = Object.keys(attributes).map(col => `\`${col}\``).join(', ');
-  const values = Object.values(attributes);
+
+  const columns = Object.keys(attributes).filter(col => col !== 'id').map(col => `\`${col}\``).join(', ');
+  const values = Object.values(attributes).filter((_, index) => Object.keys(attributes)[index] !== 'id');
   const placeholders = values.map(() => '?').join(', ');
+
   const q = `INSERT INTO \`${tableName}\` (${columns}) VALUES (${placeholders})`;
+
   db.query(q, values, (err, data) => {
     if (err) {
       console.error("Error executing query:", err);
@@ -90,9 +102,12 @@ app.post("/tableDatas", (req, res) => {
   });
 });
 
+
 app.delete("/deleteRow/:tableName/:id", (req, res) => {
   const { tableName, id } = req.params;
+
   const q = `DELETE FROM \`${tableName}\` WHERE \`id\` = ?`;
+
   db.query(q, [id], (err, data) => {
     if (err) {
       console.error("Error deleting row:", err);
@@ -102,15 +117,20 @@ app.delete("/deleteRow/:tableName/:id", (req, res) => {
   });
 });
 
+
 app.put("/updateRow/:tableName/:id", (req, res) => {
   const { tableName, id } = req.params;
   const attributes = req.body;
+
   if (!attributes || typeof attributes !== 'object' || Array.isArray(attributes)) {
     return res.status(400).json({ error: "Invalid request data" });
   }
+
   const setClause = Object.entries(attributes).map(([key, value]) => `\`${key}\` = ?`).join(', ');
   const values = Object.values(attributes);
+
   const q = `UPDATE \`${tableName}\` SET ${setClause} WHERE \`id\` = ?`;
+
   db.query(q, [...values, id], (err, data) => {
     if (err) {
       console.error("Error updating row:", err);
